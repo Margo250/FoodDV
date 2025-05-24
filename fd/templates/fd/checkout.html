@@ -1,0 +1,212 @@
+{% extends "fd/layout.html" %}
+{% load static %}
+
+{% block title %}Оформление заказа (демо) | FoodDV Брест{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <!-- Основная форма заказа-->
+        <div class="col-lg-8">
+            <h2 class="mb-4"><i class="bi bi-geo-alt"></i> Данные для доставки</h2>
+            
+            <form id="checkout-form">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <!-- Личные данные -->
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Имя*</label>
+                        <input type="text" class="form-control" id="name" 
+                               value="{{ request.user.get_full_name|default:request.user.username }}" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label">Телефон*</label>
+                        <input type="tel" class="form-control" id="phone" 
+                               value="{{ request.user.profile.phone|default:'' }}" required>
+                    </div>
+                    
+                    <!-- Адрес доставки -->
+                    <div class="col-12">
+                        <label for="address" class="form-label">Адрес доставки*</label>
+                        <input type="text" class="form-control" id="address" 
+                               value="{{ request.user.profile.address|default:'' }}" required>
+                    </div>
+                    
+                    <!-- Дополнительные поля -->
+                    <div class="col-md-4">
+                        <label for="entrance" class="form-label">Подъезд</label>
+                        <input type="text" class="form-control" id="entrance">
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="floor" class="form-label">Этаж</label>
+                        <input type="number" class="form-control" id="floor">
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="apartment" class="form-label">Квартира</label>
+                        <input type="text" class="form-control" id="apartment">
+                    </div>
+                    
+                    <!-- Комментарий -->
+                    <div class="col-12">
+                        <label for="comment" class="form-label">Комментарий</label>
+                        <textarea class="form-control" id="comment" rows="2"></textarea>
+                    </div>
+                    
+                    <!-- Способ оплаты -->
+                    <div class="col-12">
+                        <label class="form-label">Способ оплаты*</label>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <input type="radio" class="btn-check" name="payment" id="cash" value="cash" checked required>
+                            <label class="btn btn-outline-primary text-start" for="cash">
+                                <i class="bi bi-cash"></i> Наличными при получении
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="payment" id="card" value="card" required>
+                            <label class="btn btn-outline-primary text-start" for="card">
+                                <i class="bi bi-credit-card"></i> Картой курьеру
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопка оформления -->
+                    <div class="col-12 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg w-100" id="submit-order">
+                            <i class="bi bi-check-circle"></i> Подтвердить заказ ({{ total }} BYN)
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно с уведомлением -->
+<div class="modal fade" id="demoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title"><i class="bi bi-info-circle"></i> Демо-режим</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы находитесь в тестовом режиме оформления заказа.</p>
+                <p>Все данные заполнены автоматически и не будут сохранены.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Понятно</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('checkout-form');
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submit-order');
+        const originalText = submitBtn.innerHTML;
+        
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Оформляем...';
+            
+            // Собираем все данные формы
+            const formData = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                payment: document.querySelector('input[name="payment"]:checked').value,
+                comment: document.getElementById('comment').value,
+                entrance: document.getElementById('entrance').value,
+                floor: document.getElementById('floor').value,
+                apartment: document.getElementById('apartment').value
+            };
+            
+            // Формируем полный адрес
+            const fullAddress = [
+                formData.address,
+                formData.entrance && `подъезд ${formData.entrance}`,
+                formData.floor && `${formData.floor} этаж`,
+                formData.apartment && `кв. ${formData.apartment}`
+            ].filter(Boolean).join(', ');
+            
+            // Отправляем данные на сервер
+            const response = await fetch('{% url "process_order" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: formData.name,
+                    phone: formData.phone,
+                    address: fullAddress,
+                    payment: formData.payment,
+                    comment: formData.comment
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) throw new Error(data.error || 'Ошибка сервера');
+            
+            // Перенаправляем на страницу успешного оформления
+            window.location.href = `/order/success/${data.order_id}/`;
+            
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert('Ошибка: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+});
+</script>
+
+<style>
+.card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.list-group-item {
+    padding: 1rem 1.25rem;
+    border-color: rgba(0,0,0,0.05);
+}
+
+#checkout-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.btn-check:checked + .btn-outline-primary {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+@media (max-width: 992px) {
+    .sticky-top {
+        position: static !important;
+    }
+}
+
+#submit-order {
+    transition: all 0.3s ease;
+}
+#submit-order:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+</style>
+{% endblock %}
