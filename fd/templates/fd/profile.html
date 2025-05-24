@@ -1,0 +1,287 @@
+{% extends "fd/layout.html" %}
+{% load static %}
+
+{% block title %}Профиль | FoodDV Брест{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <!-- Боковая панель профиля -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="bi bi-person-circle"></i> Мой профиль</h3>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Аватар пользователя -->
+                    <img src="{% if profile.avatar %}{{ profile.avatar.url }}?{% now 'U' %}{% else %}{% static 'fd/img/avatar-default.jpg' %}?{% now 'U' %}{% endif %}" 
+                         class="rounded-circle border mb-3" 
+                         width="150" 
+                         height="150"
+                         alt="Аватар"
+                         id="current-avatar">
+                    
+                    <h4>{{ user.get_full_name|default:user.username }}</h4>
+                    <p class="text-muted mb-1">{{ user.email }}</p>
+                    {% if profile.phone %}
+                        <p class="text-muted"><i class="bi bi-telephone"></i> {{ profile.phone }}</p>
+                    {% endif %}
+                    
+                    <button class="btn btn-outline-primary mt-3" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        <i class="bi bi-pencil"></i> Редактировать профиль
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- История заказов -->
+        <div class="col-lg-8">
+        <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h3 class="mb-0"><i class="bi bi-clock-history"></i> История заказов</h3>
+        </div>
+        <div class="card-body">
+            {% if orders.exists %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>№</th>
+                                <th>Дата</th>
+                                <th>Сумма</th>
+                                <th>Статус</th>
+                                <th>Тип</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr>
+                                <td>{{ order.id }}</td>
+                                <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
+                                <td>{{ order.total }} BYN</td>
+                                <td>
+                                    <span class="badge bg-{% if order.status == 'completed' %}success{% else %}warning{% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if order.is_demo %}
+                                        <span class="badge bg-info">Демо</span>
+                                    {% else %}
+                                        <span class="badge bg-primary">Реальный</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center py-4">
+                    <i class="bi bi-info-circle fs-4"></i>
+                    <p class="mb-0 mt-2">У вас пока нет заказов</p>
+                    <a href="{% url 'menu' %}" class="btn btn-primary mt-3">
+                        <i class="bi bi-menu-button"></i> Сделать первый заказ
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования профиля -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'update_profile' %}" enctype="multipart/form-data" id="profileForm">
+                {% csrf_token %}
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Редактировать профиль</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Поле для загрузки аватарки -->
+                    <div class="mb-3">
+                        <label class="form-label">Аватар</label>
+                        <input type="file" class="form-control" name="avatar" id="avatar-input" accept="image/*">
+                        {% if profile.avatar %}
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" name="avatar-clear" id="avatar-clear">
+                                <label class="form-check-label" for="avatar-clear">Удалить текущий аватар</label>
+                            </div>
+                            <div class="mt-2">
+                                <small>Текущий аватар:</small>
+                                <img src="{{ profile.avatar.url }}?{% now 'U' %}" width="50" class="ms-2 rounded" id="modal-avatar-preview">
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Поле телефона -->
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input type="tel" class="form-control" name="phone" value="{{ profile.phone|default:'' }}">
+                    </div>
+                    
+                    <!-- Поле адреса -->
+                    <div class="mb-3">
+                        <label class="form-label">Адрес доставки</label>
+                        <textarea class="form-control" name="address" rows="3">{{ profile.address|default:'' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary" id="submit-btn">Сохранить изменения</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Уведомления -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <strong class="me-auto">Успех</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Профиль успешно обновлен!
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Элементы DOM
+    const profileForm = document.getElementById('profileForm');
+    const submitBtn = document.getElementById('submit-btn');
+    const currentAvatar = document.getElementById('current-avatar');
+    const avatarInput = document.getElementById('avatar-input');
+    const avatarClear = document.getElementById('avatar-clear');
+    const modalAvatarPreview = document.getElementById('modal-avatar-preview');
+    const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+    const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+    const defaultAvatar = "{% static 'fd/img/avatar-default.jpg' %}";
+
+    // Функция для показа уведомлений
+    function showToast(toast, message) {
+        const toastBody = toast._element.querySelector('.toast-body');
+        toastBody.textContent = message;
+        toast.show();
+    }
+
+    // Предпросмотр аватарки перед загрузкой
+    if (avatarInput) {
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Проверка типа файла
+                if (!file.type.startsWith('image/')) {
+                    showToast(errorToast, 'Пожалуйста, выберите файл изображения');
+                    e.target.value = '';
+                    return;
+                }
+
+                // Проверка размера (макс. 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast(errorToast, 'Файл слишком большой (максимум 2MB)');
+                    e.target.value = '';
+                    return;
+                }
+
+                // Показываем превью
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    modalAvatarPreview.src = event.target.result;
+                    if (avatarClear) avatarClear.checked = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Обработка удаления аватарки
+    if (avatarClear) {
+        avatarClear.addEventListener('change', function() {
+            if (this.checked) {
+                modalAvatarPreview.src = defaultAvatar;
+                if (avatarInput) avatarInput.value = '';
+            }
+        });
+    }
+
+    // Обработка отправки формы
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Сохранение...';
+            
+            const formData = new FormData(profileForm);
+            
+            fetch(profileForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || `Ошибка сервера: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Обновляем аватар с временной меткой
+                    const timestamp = new Date().getTime();
+                    if (data.avatar_url) {
+                        currentAvatar.src = `${data.avatar_url}?t=${timestamp}`;
+                    } else {
+                        currentAvatar.src = `${defaultAvatar}?t=${timestamp}`;
+                    }
+                    
+                    showToast(successToast, data.message || 'Профиль успешно обновлен!');
+                    
+                    // Закрываем модальное окно через 1 секунду
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
+                    }, 1000);
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    throw new Error(data.error || 'Неизвестная ошибка сервера');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast(errorToast, error.message);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Сохранить изменения';
+            });
+        });
+    }
+
+    // Принудительное обновление аватарки при загрузке страницы
+    if (currentAvatar && !currentAvatar.src.includes('?')) {
+        currentAvatar.src = currentAvatar.src + '?t=' + new Date().getTime();
+    }
+});
+</script>
+{% endblock %}
