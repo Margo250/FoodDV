@@ -1,0 +1,179 @@
+{% extends "fd/layout.html" %}
+{% load static %}
+
+{% block title %}Мои заказы | FoodDV Брест{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-clock-history"></i> Мои заказы</h1>
+        <a href="{% url 'profile' %}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left"></i> Назад в профиль
+        </a>
+    </div>
+
+    {% if orders %}
+    <div class="orders-container">
+        {% for order in orders %}
+        <div class="list-group-item list-group-item-action">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                <div class="mb-2 mb-md-0">
+                    <h5 class="mb-1">Заказ #{{ order.id }}</h5>
+                    <div class="d-flex flex-wrap gap-3">
+                        <span class="text-muted">
+                            <i class="bi bi-calendar"></i> {{ order.created_at|date:"d.m.Y H:i" }}
+                        </span>
+                        <span class="text-muted">
+                            <i class="bi bi-cash"></i> {{ order.total }} BYN
+                        </span>
+                        <span class="badge 
+                            {% if order.status == 'completed' %}bg-success
+                            {% elif order.status == 'cancelled' %}bg-secondary
+                            {% else %}bg-primary{% endif %}">
+                            {{ order.get_status_display }}
+                        </span>
+                        {% if order.is_demo %}
+                        <span class="badge bg-info">Демо</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> Подробнее
+                    </a>
+                    {% if order.status == 'new' %}
+                    <button class="btn btn-outline-danger btn-sm cancel-order" 
+                            data-order-id="{{ order.id }}">
+                        <i class="bi bi-x-circle"></i> Отменить
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Краткий состав заказа -->
+            <div class="mt-2">
+                <ul class="list-unstyled mb-0">
+                    {% for item in order.items.all|slice:":3" %}
+                    <li>
+                        <small>{{ item.quantity }} × {{ item.product.name }}</small>
+                    </li>
+                    {% endfor %}
+                    {% if order.items.all|length > 3 %}
+                    <li><small>...и еще {{ order.items.all|length|add:"-3" }} товаров</small></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center py-5">
+        <i class="bi bi-cart-x fs-1"></i>
+        <h4 class="mt-3">У вас пока нет заказов</h4>
+        <p class="text-muted">После оформления заказа он появится в этом разделе</p>
+        <a href="{% url 'menu' %}" class="btn btn-primary mt-3">
+            <i class="bi bi-menu-button"></i> Перейти в меню
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.cancel-order').forEach(button => {
+        button.addEventListener('click', async function() {
+            const orderId = this.dataset.orderId;
+            
+            if (!confirm(`Отменить заказ #${orderId}?`)) return;
+
+            const originalHtml = this.innerHTML;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            this.disabled = true;
+            
+            try {
+                const response = await fetch(`{% url 'cancel_order' 0 %}`.replace('0', orderId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Ошибка сервера');
+                
+                const data = await response.json();
+                showToast('success', 'Заказ успешно отменён');
+                
+                const orderElement = this.closest('.list-group-item');
+                
+                if (!orderElement) {
+                    console.error('Элемент заказа не найден');
+                    this.innerHTML = originalHtml;
+                    this.disabled = false;
+                    return;
+                }
+                
+                // Анимация удаления
+                orderElement.style.transition = 'all 0.3s ease';
+                orderElement.style.opacity = '0';
+                
+                setTimeout(() => {
+                    if (orderElement.parentNode) {
+                        orderElement.remove();
+                    }
+                    
+                    // Проверка пустого списка
+                    if (!document.querySelector('.list-group-item')) {
+                        document.querySelector('.orders-container').innerHTML = `
+                            <div class="alert alert-info text-center py-5">
+                                <i class="bi bi-cart-x fs-1"></i>
+                                <h4 class="mt-3">У вас нет активных заказов</h4>
+                                <a href="{% url 'menu' %}" class="btn btn-primary mt-3">
+                                    <i class="bi bi-menu-button"></i> Перейти в меню
+                                </a>
+                            </div>
+                        `;
+                    }
+                }, 300);
+                
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showToast('error', error.message);
+                this.innerHTML = originalHtml;
+                this.disabled = false;
+            }
+        });
+    });
+});
+</script>
+
+<style>
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.order-item {
+    transition: all 0.3s ease;
+}
+
+.order-item.removing {
+    animation: fadeOut 0.3s ease-out;
+}
+
+.list-group-item {
+    transition: all 0.3s ease;
+}
+
+.cancel-order {
+    transition: all 0.2s ease;
+}
+
+.cancel-order:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.3);
+}
+</style>
+{% endblock %}
