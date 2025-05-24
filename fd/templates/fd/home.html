@@ -1,0 +1,52 @@
+{% extends "fd/layout.html" %}
+
+{% block content %}
+<!-- Герой-блок -->
+<section class="hero-section text-center py-5 bg-primary text-white rounded-3 mb-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold">Доставка еды в Бресте</h1>
+        <p class="lead">Пицца, бургеры, суши, WOK — за 30-60 минут!</p>
+        
+        <!-- Текст приветствия-->
+        {% if user.is_authenticated %}
+            <p class="mb-3">Добро пожаловать, {{ user.username }}!</p>
+        {% endif %}
+        
+        <a href="{% url 'menu' %}" class="btn btn-light btn-lg mt-3">Заказать сейчас</a>
+    </div>
+</section>
+
+<!-- Блок преимуществ -->
+<div class="row text-center">
+    <div class="col-md-3 mb-4">
+        <div class="p-3 border rounded">
+            <h3>🍕 Пицца</h3>
+            <p>От 19 BYN</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="p-3 border rounded">
+            <h3>🍔 Бургеры</h3>
+            <p>От 15 BYN</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="p-3 border rounded">
+            <h3>🍣 Суши</h3>
+            <p>От 25 BYN</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="p-3 border rounded">
+            <h3>🍜 WOK</h3>
+            <p>От 18 BYN</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hero-section {
+        animation: fadeIn 0.5s ease-out;
+    }
+</style>
+{% endblock %}
