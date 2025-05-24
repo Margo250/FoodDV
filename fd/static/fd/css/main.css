@@ -1,0 +1,242 @@
+/* Основные цвета */
+body {
+    background-color: #f8f9fa;
+}
+:root {
+    --primary: #ff6b6b;
+    --dark: #343a40;
+}
+
+/* Герой-блок */
+.hero-section {
+    background-color: var(--primary);
+    background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('/static/fd/img/hero-bg.jpg');
+    background-size: cover;
+}
+
+/* Анимация кнопок */
+.btn {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Карточки товаров */
+.card {
+    transition: all 0.4s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.card-img-top {
+    height: 180px;
+    object-fit: cover;
+}
+
+/* Плавное появление страницы */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+body {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Плавные переходы для ссылок */
+a {
+    transition: all 0.3s ease;
+}
+
+a:hover {
+    opacity: 0.8;
+    transform: translateY(-2px);
+}
+
+/* Плавная прокрутка */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Стиль для анимированных ссылок */
+.transition-link {
+    display: inline-block;
+    position: relative;
+    color: #007bff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    padding: 5px 10px;
+}
+
+.transition-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #007bff;
+    transition: width 0.3s ease;
+}
+
+.transition-link:hover {
+    transform: translateX(5px);
+}
+
+.transition-link:hover::after {
+    width: 100%;
+}
+
+.navbar {
+    padding: 1rem 0;
+}
+
+.badge {
+    font-size: 0.7rem;
+}
+
+/* Стили для корзины */
+.quantity-input {
+    max-width: 50px;
+    text-align: center;
+}
+
+.input-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Анимация изменения количества */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.quantity-updated {
+    animation: pulse 0.3s ease;
+}
+
+#checkout-btn:disabled {
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+#checkout-btn .checkout-text {
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+#checkout-btn.loading .checkout-text {
+    transform: translateX(10px);
+    opacity: 0;
+}
+
+#checkout-btn .spinner-border {
+    position: absolute;
+    left: 50%;
+    margin-left: -0.5rem;
+}
+
+#checkout-btn.loading .spinner-border {
+    display: inline-block !important;
+}
+
+.object-fit-cover {
+    object-fit: cover;
+    object-position: center;
+}
+
+.cart-item img {
+    border: 1px solid #eee;
+    transition: transform 0.3s ease;
+}
+
+.cart-item:hover img {
+    transform: scale(1.05);
+}
+
+.object-fit-cover {
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    transition: transform 0.3s ease;
+}
+
+.cart-item:hover .object-fit-cover {
+    transform: scale(1.03);
+}
+
+/* Toast Notifications */
+.toast-container {
+    z-index: 1100;
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+}
+
+.toast {
+    min-width: 300px;
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.toast-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+}
+
+.toast-body {
+    padding: 1rem;
+    background-color: #fff;
+}
+
+/* Анимации */
+@keyframes toastIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+.toast.show {
+    display: block;
+    animation: toastIn 0.3s ease forwards;
+}
+
+.toast.hide {
+    animation: toastOut 0.3s ease forwards;
+}
+
+/* Цветовые схемы */
+.toast-success .toast-header {
+    background-color: #198754;
+    color: white;
+}
+
+.toast-error .toast-header {
+    background-color: #dc3545;
+    color: white;
+}
+
+.toast-warning .toast-header {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.toast-info .toast-header {
+    background-color: #0dcaf0;
+    color: #212529;
+}
